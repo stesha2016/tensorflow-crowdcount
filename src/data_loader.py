@@ -30,7 +30,7 @@ class ImageDataLoader():
 				ht_1 = (ht/4)*4
 				wd_1 = (wd/4)*4
 				img = cv2.resize(img, (wd_1, ht_1))
-				img = img.reshape((1,1,img.shape[0],img.shape[1]))
+				img = img.reshape((1, img.shape[0], img.shape[1], 1))
 				den = pd.read_csv(os.path.join(self.gt_path, os.path.splitext(fname)[0] + '.csv'), sep=',', header=None).as_matrix()
 				den = den.astype(np.float32)
 				if self.gt_downsample:
@@ -41,7 +41,7 @@ class ImageDataLoader():
 				else:
 					den = cv2.resize(den, (wd_1, ht_1))
 					den = den * ((wd * ht)/(wd_1*ht_1))
-				den = den.reshape((1,1,den.shape[0],den.shape[1]))
+				den = den.reshape((1, den.shape[0], den.shape[1], 1))
 				blob = {}
 				blob['data'] = img
 				blob['den'] = den
@@ -74,7 +74,7 @@ class ImageDataLoader():
 				ht_1 = (ht/4)*4
 				wd_1 = (wd/4)*4
 				img = cv2.resize(img, (wd_1, ht_1))
-				img = img.reshape((1,1,img.shape[0],img.shape[1]))
+				img = img.reshape((1, img.shape[0], img.shape[1], 1))
 				den = pd.read_csv(os.path.join(self.gt_path, os.path.splitext(fname)[0] + '.csv'), sep=',', header=None).as_matrix()
 				den = den.astype(np.float32)
 				if self.gt_downsample:
@@ -85,7 +85,7 @@ class ImageDataLoader():
 				else:
 					den = cv2.resize(den, (wd_1, ht_1))
 					den = den * ((wd * ht)/(wd_1*ht_1))
-				den = den.reshape((1,1,den.shape[0],den.shape[1]))
+				den = den.reshape((1, den.shape[0], den.shape[1], 1))
 				blob = {}
 				blob['data'] = img
 				blob['den'] = den
