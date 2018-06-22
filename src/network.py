@@ -11,9 +11,16 @@ def conv2d(x, f, bn=False, relu=True, **k):
 
 class SaveNet():
 	def __init__(self):
-		self.saver = tf.train.Saver()
-	def save_net(self, sess, model_name, step, meta_save):
-		self.saver.save(sess, model_name, global_step=step, write_meta_graph=meta_save)
+		self.saver = tf.train.Saver(max_to_keep=4)
 
-def load_net(fname, net):
-    import h5py
+	def save_net(self, sess, model_name, step):
+		self.saver.save(sess, model_name, global_step=step)
+
+class LoadNet():
+	def __init__(self, meta_name):
+		self.saver = tf.train.import_meta_graph(meta_name)
+
+	def load_net(self, sess, model_path):
+		self.saver.restore(sess, tf.train.latest_checkpoint(model_path))
+		graph = tf.get_default_graph()
+		return graph, sess

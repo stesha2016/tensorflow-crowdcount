@@ -4,7 +4,7 @@ import sys
 from src.crowd_counter import CrowdCounter
 from src.data_loader import ImageDataLoader
 from src.evaluate_model import evaluate
-from src.network import SaveNet
+from src.network import SaveNet, LoadNet
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
@@ -17,23 +17,38 @@ val_gt_path = '/local/share/DeepLearning/crowdcount-mcnn/data/formatted_trainval
 model_name = './models/crowncnn'
 end_step = 2000
 disp_interval = 500
-
-im_data = tf.placeholder(dtype=tf.float32, shape=[None, None, None, 1])
-gt_data = tf.placeholder(dtype=tf.float32, shape=[None, None, None, 1])
-net = CrowdCounter(im_data, gt_data)
-optimizer = net.get_optimizer()
-MSE = net.get_MSE()
-density = net.get_density()
+base_pretrain = True
+meta_path = './models/crowncnn-16.meta'
+model_path = './models/'
 
 data_loader = ImageDataLoader(train_path, train_gt_path, shuffle=True, gt_downsample=True, pre_load=True)
 val_loader = ImageDataLoader(val_path, val_gt_path, shuffle=True, gt_downsample=True, pre_load=True)
-sess.run(tf.global_variables_initializer())
+
+if base_pretrain:
+	ln = LoadNet(meta_path)
+	graph, sess = ln.load_net(sess, model_path)
+	im_data = graph.get_tensor_by_name('im_data:0')
+	gt_data = graph.get_tensor_by_name('gt_data:0')
+	density = graph.get_collection('density_op')[0]
+	optimizer = graph.get_collection('optimizer_op')[0]
+	MSE = graph.get_collection('MSE_op')[0]
+else:
+	im_data = tf.placeholder(dtype=tf.float32, shape=[None, None, None, 1], name='im_data')
+	gt_data = tf.placeholder(dtype=tf.float32, shape=[None, None, None, 1], name='gt_data')
+	net = CrowdCounter(im_data, gt_data)
+	optimizer = net.get_optimizer()
+	MSE = net.get_MSE()
+	density = net.get_density()
+	sess.run(tf.global_variables_initializer())
+	tf.add_to_collection('density_op', density)
+	tf.add_to_collection('optimizer_op', optimizer)
+	tf.add_to_collection('MSE_op', MSE)
 
 step = -1
 train_loss = 0
 best_mae = sys.maxint
 sn = SaveNet()
-meta_save = True
+
 for epoch in range(0, end_step):
 	for blob in data_loader:
 		step += 1
@@ -50,8 +65,6 @@ for epoch in range(0, end_step):
 		if mae < best_mae:
 			best_mae = mae
 			best_mse = mse
-			sn.save_net(sess, './models/crowncnn', epoch, meta_save)
-			if meta_save:
-				meta_save = False
+			sn.save_net(sess, './models/crowncnn', epoch)
 
 		print('[{}]/[{}], [{}], mae/best = {}/{}, mse/best = {}/{}'.format(epoch, end_step, step, mae, best_mae, mse, best_mse))
