@@ -17,9 +17,11 @@ val_gt_path = '/local/share/DeepLearning/crowdcount-mcnn/data/formatted_trainval
 model_name = './models/crowncnn'
 end_step = 2000
 disp_interval = 500
-base_pretrain = True
+base_pretrain = False
 meta_path = './models/crowncnn-16.meta'
 model_path = './models/'
+use_tensorboard = True
+log_dir = './summary'
 
 data_loader = ImageDataLoader(train_path, train_gt_path, shuffle=True, gt_downsample=True, pre_load=True)
 val_loader = ImageDataLoader(val_path, val_gt_path, shuffle=True, gt_downsample=True, pre_load=True)
@@ -32,6 +34,7 @@ if base_pretrain:
 	density = graph.get_collection('density_op')[0]
 	optimizer = graph.get_collection('optimizer_op')[0]
 	MSE = graph.get_collection('MSE_op')[0]
+	accurary = graph.get_collection('accurary_op')[0]
 else:
 	im_data = tf.placeholder(dtype=tf.float32, shape=[None, None, None, 1], name='im_data')
 	gt_data = tf.placeholder(dtype=tf.float32, shape=[None, None, None, 1], name='gt_data')
@@ -39,26 +42,35 @@ else:
 	optimizer = net.get_optimizer()
 	MSE = net.get_MSE()
 	density = net.get_density()
+	accurary = net.get_accuracy()
 	sess.run(tf.global_variables_initializer())
 	tf.add_to_collection('density_op', density)
 	tf.add_to_collection('optimizer_op', optimizer)
 	tf.add_to_collection('MSE_op', MSE)
+	tf.add_to_collection('accurary_op', accurary)
 
 step = -1
 train_loss = 0
 best_mae = sys.maxint
 sn = SaveNet()
+if use_tensorboard:
+	train_writer = tf.summary.FileWriter(log_dir, sess.graph)
+	tf.summary.scalar('train_loss', MSE)
+	tf.summary.scalar('accurary', accurary)
+	merged = tf.summary.merge_all()
 
 for epoch in range(0, end_step):
 	for blob in data_loader:
 		step += 1
 		data = blob['data']
 		den = blob['den']
-		_, train_loss, pred_den = sess.run([optimizer, MSE, density], feed_dict={im_data: data, gt_data: den})
+		_, train_loss, pred_den, summary = sess.run([optimizer, MSE, density, merged], feed_dict={im_data: data, gt_data: den})
 		if step % disp_interval == 0:
 			gt_count = np.sum(den)
 			pred_count = np.sum(pred_den)
 			print('[{}]/[{}], [{}], train_loss = {}, gt_count = {}, pred_count = {}'.format(epoch, end_step, step, train_loss, gt_count, pred_count))
+			if use_tensorboard:
+				train_writer.add_summary(summary, step)
 
 	if epoch % 2 == 0:
 		mae, mse = evaluate(sess, density, im_data, val_loader)
@@ -66,5 +78,7 @@ for epoch in range(0, end_step):
 			best_mae = mae
 			best_mse = mse
 			sn.save_net(sess, './models/crowncnn', epoch)
-
 		print('[{}]/[{}], [{}], mae/best = {}/{}, mse/best = {}/{}'.format(epoch, end_step, step, mae, best_mae, mse, best_mse))
+
+if use_tensorboard:
+	train_writer.close()

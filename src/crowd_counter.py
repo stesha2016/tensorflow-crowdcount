@@ -17,3 +17,8 @@ class CrowdCounter():
 
 	def get_optimizer(self):
 		return tf.train.AdamOptimizer(learning_rate=lr).minimize(self.get_MSE(), var_list=tf.trainable_variables())
+
+	def get_accuracy(self):
+		gt_count = tf.reduce_sum(self.gt_data)
+		pred_count = tf.reduce_sum(self.density)
+		return abs(gt_count - pred_count) / gt_count
