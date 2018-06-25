@@ -33,29 +33,29 @@ if base_pretrain:
 	gt_data = graph.get_tensor_by_name('gt_data:0')
 	density = graph.get_collection('density_op')[0]
 	optimizer = graph.get_collection('optimizer_op')[0]
-	MSE = graph.get_collection('MSE_op')[0]
+	loss = graph.get_collection('loss_op')[0]
 	accurary = graph.get_collection('accurary_op')[0]
 else:
 	im_data = tf.placeholder(dtype=tf.float32, shape=[None, None, None, 1], name='im_data')
 	gt_data = tf.placeholder(dtype=tf.float32, shape=[None, None, None, 1], name='gt_data')
 	net = CrowdCounter(im_data, gt_data)
 	optimizer = net.get_optimizer()
-	MSE = net.get_MSE()
+	loss = net.get_loss()
 	density = net.get_density()
 	accurary = net.get_accuracy()
 	sess.run(tf.global_variables_initializer())
 	tf.add_to_collection('density_op', density)
 	tf.add_to_collection('optimizer_op', optimizer)
-	tf.add_to_collection('MSE_op', MSE)
+	tf.add_to_collection('loss_op', loss)
 	tf.add_to_collection('accurary_op', accurary)
 
-step = -1
 train_loss = 0
 best_mae = sys.maxint
 sn = SaveNet()
+step = -1
 if use_tensorboard:
 	train_writer = tf.summary.FileWriter(log_dir, sess.graph)
-	tf.summary.scalar('train_loss', MSE)
+	tf.summary.scalar('train_loss', loss)
 	tf.summary.scalar('accurary', accurary)
 	merged = tf.summary.merge_all()
 
@@ -64,21 +64,23 @@ for epoch in range(0, end_step):
 		step += 1
 		data = blob['data']
 		den = blob['den']
-		_, train_loss, pred_den, summary = sess.run([optimizer, MSE, density, merged], feed_dict={im_data: data, gt_data: den})
+		_, train_loss, pred_den, summary = sess.run([optimizer, loss, density, merged], feed_dict={im_data: data, gt_data: den})
+		if use_tensorboard:
+			train_writer.add_summary(summary, step)
+		gt_count = np.sum(den)
+		pred_count = np.sum(pred_den)
 		if step % disp_interval == 0:
-			gt_count = np.sum(den)
-			pred_count = np.sum(pred_den)
-			print('[{}]/[{}], [{}], train_loss = {}, gt_count = {}, pred_count = {}'.format(epoch, end_step, step, train_loss, gt_count, pred_count))
-			if use_tensorboard:
-				train_writer.add_summary(summary, step)
+			print('epoch: %4d, step %4d, gt_cnt: %4.1f, et_cnt: %4.1f' % (epoch, step, gt_count,et_count))
 
 	if epoch % 2 == 0:
 		mae, mse = evaluate(sess, density, im_data, val_loader)
 		if mae < best_mae:
 			best_mae = mae
 			best_mse = mse
+			best_epoch = epoch
 			sn.save_net(sess, './models/crowncnn', epoch)
-		print('[{}]/[{}], [{}], mae/best = {}/{}, mse/best = {}/{}'.format(epoch, end_step, step, mae, best_mae, mse, best_mse))
+		print('EPOCH: %d, MAE: %.1f, MSE: %0.1f' % (epoch, mae, mse))
+		print('BEST MAE: %0.1f, BEST MSE: %0.1f, BEST MODEL: %s' % (best_mae, best_mse, best_epoch))
 
 if use_tensorboard:
 	train_writer.close()
