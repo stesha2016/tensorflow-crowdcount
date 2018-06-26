@@ -10,3 +10,6 @@
 ## 性能
  * 对于参考算法中提供的patches_A_9数据集，训练1000个epoch，MAE会下降到9.7。效果并不算太好，因为对于场景不固定的情况下准确率并不算太高。
  * 训练自己的数据集，
+## 结果
+ * 预测可以得到图片的人头数，还可以得到density的图片。根据density的图片可以得到标注人头的图片
+ [分屏标记](https://github.com/stesha2016/tensorflow-crowdcount/blob/master/images/test.jpg)
