@@ -15,7 +15,7 @@ train_gt_path = '/local/share/DeepLearning/crowdcount-mcnn/data/formatted_trainv
 val_path = '/local/share/DeepLearning/crowdcount-mcnn/data/formatted_trainval/shanghaitech_part_A_patches_9/val'
 val_gt_path = '/local/share/DeepLearning/crowdcount-mcnn/data/formatted_trainval/shanghaitech_part_A_patches_9/val_den'
 model_name = './models/crowncnn'
-end_step = 2000
+end_step = 1000
 disp_interval = 500
 base_pretrain = False
 meta_path = './models/crowncnn-16.meta'
@@ -70,7 +70,7 @@ for epoch in range(0, end_step):
 		gt_count = np.sum(den)
 		pred_count = np.sum(pred_den)
 		if step % disp_interval == 0:
-			print('epoch: %4d, step %4d, gt_cnt: %4.1f, et_cnt: %4.1f' % (epoch, step, gt_count,et_count))
+			print('epoch: %4d, step %4d, gt_cnt: %4.1f, et_cnt: %4.1f' % (epoch, step, gt_count, pred_count))
 
 	if epoch % 2 == 0:
 		mae, mse = evaluate(sess, density, im_data, val_loader)
