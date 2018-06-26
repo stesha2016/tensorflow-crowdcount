@@ -12,4 +12,4 @@
  * 训练自己的数据集，
 ## 结果
  * 预测可以得到图片的人头数，还可以得到density的图片。根据density的图片可以得到标注人头的图片
- [分屏标记](https://github.com/stesha2016/tensorflow-crowdcount/blob/master/images/test.jpg)
+ ![分屏标记](https://github.com/stesha2016/tensorflow-crowdcount/blob/master/images/test.jpg)
