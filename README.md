@@ -1,4 +1,4 @@
-# crown count(人流密度算法)
+# crowd count(人流密度算法)
  * [参考算法](https://github.com/svishwa/crowdcount-mcnn) 主要是参考此算法中提到的论文用tensorflow进行实现。
  * 可以下载参考算法中提到的数据集，用matlab进行处理后，用本算法进行training
 ## 如何训练自己的数据集
